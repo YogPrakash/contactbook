@@ -1,0 +1,161 @@
+##*********************************  API'S Info ***********************************##
+1.  Insert recipe API
+
+    url       : localhost:8080/restservice/recipe
+    type      : POST
+    body      : {
+              "name": "chicken",
+              "difficulty": 3,
+              "vegetarian": true
+              }
+    headers   : Content-Type:application/json
+                Authorization:Basic dXNlcm5hbWU6cGFzc3dvcmQ=
+    response:   {
+                    "meta": {
+                        "code": 200,
+                        "msg": "inserted recipe successfully"
+                    },
+                    "data": {
+                        "recipeID": "2891ebce-1a3d-11e8-8000-000000000000",
+                        "name": "chicken",
+                        "prepTime": "2018-02-25T15:04:21.077913107Z",
+                        "difficulty": 3,
+                        "vegetarian": true,
+                        "rating": null
+                    }
+                }
+
+
+2. Get recipe  API
+
+    url      : localhost:8080/restservice/recipe/{id} //e.g:localhost:8080/restservice/recipe/c448bc29-1a16-11e8-8000-000000000000
+    type     : GET
+    headers  : Content-Type:application/json
+    response : {
+                   "meta": {
+                       "code": 200,
+                       "msg": "recipe by id response"
+                   },
+                   "data": {
+                       "recipeID": "c448bc29-1a16-11e8-8000-000000000000",
+                       "name": "maggi",
+                       "prepTime": "2018-02-25T10:29:31.95Z",
+                       "difficulty": 2,
+                       "vegetarian": true,
+                       "rating": 5
+                   }
+               }
+
+
+3. Get List of recipe API
+
+** list api can support pagination so if needed pagination add query params else it will return all list ***
+    url      : localhost:8080/restservice/recipe?fromPage=1&toPage=3
+    type     : GET
+    headers  : Content-Type:application/json
+    response : {
+                   "meta": {
+                       "code": 200,
+                       "msg": "recipe list response"
+                   },
+                   "data": [{
+                       "recipeID": "c448bc29-1a16-11e8-8000-000000000000",
+                       "name": "maggi",
+                       "prepTime": "2018-02-25T10:29:31.95Z",
+                       "difficulty": 2,
+                       "vegetarian": true,
+                       "rating": 5
+                   }]
+               }
+
+4. patch recipe API
+
+    url       : localhost:8080/restservice/recipe/{id} //e.g:localhost:8080/restservice/recipe/d192142d-19a6-11e8-8000-000000000000
+    type      : PATCH
+    body      :  {
+                "name":"chicken",
+                "difficulty":3,
+                "vegetarian":false
+                }
+    headers   : Content-Type:application/json
+                Authorization:Basic dXNlcm5hbWU6cGFzc3dvcmQ=
+    response:  {
+                   "meta": {
+                       "code": 200,
+                       "msg": "updated recipe"
+                   },
+                   "data": {
+                       "recipeID": "d192142d-19a6-11e8-8000-000000000000",
+                       "name": "chicken",
+                       "prepTime": "2018-02-25T02:38:10.607+05:30",
+                       "difficulty": 3,
+                       "vegetarian": false,
+                       "rating": null
+                   }
+               }
+
+5. delete recipe API
+
+    url       : localhost:8080/restservice/recipe/{id}  //e.g:localhost:8080/restservice/recipe/d192142d-19a6-11e8-8000-000000000000
+    type      : DELETE
+    headers   : Content-Type:application/json
+                Authorization:Basic dXNlcm5hbWU6cGFzc3dvcmQ=
+    response:  {
+                   "meta": {
+                       "code": 200,
+                       "msg": "deleted the  recipe document with ID: d192142d-19a6-11e8-8000-000000000000"
+                   }
+               }
+
+6. Rating recipe API
+
+    url       : localhost:8080/restservice/{id}/recipe  //e.g:localhost:8080/restservice/recipe/df5e7991-1a2d-11e8-8000-000000000000/rating
+    type      : POST
+    body      :{
+               	"rating":5
+               }
+    headers   : Content-Type:application/json
+    response:   {
+                    "meta": {
+                        "code": 200,
+                        "msg": "rated  recipe successfully"
+                    },
+                    "data": {
+                        "recipeID": "df5e7991-1a2d-11e8-8000-000000000000",
+                        "name": "dal makhani",
+                        "prepTime": "2018-02-25T18:44:55.816+05:30",
+                        "difficulty": 1,
+                        "vegetarian": true,
+                        "rating": 5
+                    }
+                }
+
+
+7. Search recipe API
+    url      : localhost:8080/restservice/recipe/search/?query=mag
+    type     : GET
+    headers  : Content-Type:application/json
+    response : {
+                   "meta": {
+                       "code": 200,
+                       "msg": "recipe search list response"
+                   },
+                   "data": [
+                       {
+                           "recipeID": "def29aee-1a0b-11e8-8000-000000000000",
+                           "name": "maggi",
+                           "prepTime": "2018-02-25T14:41:32.22+05:30",
+                           "difficulty": 2,
+                           "vegetarian": true,
+                           "rating": null
+                       },
+                       {
+                           "recipeID": "71f8e4d4-1a0b-11e8-8000-000000000000",
+                           "name": "maggi",
+                           "prepTime": "2018-02-25T14:38:29.389+05:30",
+                           "difficulty": 2,
+                           "vegetarian": true,
+                           "rating": null
+                       }
+                   ]
+               }
