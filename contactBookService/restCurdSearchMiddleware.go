@@ -2,14 +2,14 @@ package contactBookService
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"github.com/unrolled/render"
 	"gopkg.in/mgo.v2"
 	l "log"
-	"net/http"
 	"net"
+	"net/http"
 	"time"
-	"crypto/tls"
 )
 
 var tlsConfig = &tls.Config{}
@@ -73,12 +73,12 @@ func DBSession() *mgo.Session {
 		Addrs: []string{"cluster0-shard-00-00-awvwh.mongodb.net",
 			"cluster0-shard-00-01-awvwh.mongodb.net:",
 			"cluster0-shard-00-02-awvwh.mongodb.net"},
-		Database:"admin",
-		ReplicaSetName:"Cluster0-shard-0",
-		Username:"yprakash",
-		Password:"test123",
-		FailFast:true,
-		Timeout:time.Second * 5,
+		Database:       "admin",
+		ReplicaSetName: "Cluster0-shard-0",
+		Username:       "yprakash",
+		Password:       "test123",
+		FailFast:       true,
+		Timeout:        time.Second * 30,
 	}
 	x.DialServer = func(addr *mgo.ServerAddr) (net.Conn, error) {
 		conn, err := tls.Dial("tcp", addr.String(), tlsConfig)

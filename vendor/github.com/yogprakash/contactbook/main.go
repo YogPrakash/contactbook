@@ -1,9 +1,9 @@
 package main
 
 import (
+	curdS "github.com/yogprakash/contactbook/contactBookService"
 	l "log"
 	"net/http"
-	curdS "github.com/yogprakash/contactbook/contactBookService"
 )
 
 func main() {

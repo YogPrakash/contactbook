@@ -1,17 +1,17 @@
 package main
 
 import (
+	"fmt"
+	"io"
 	l "log"
 	"net/http"
 	"os"
-	"io"
-	"fmt"
 	//"io"
-	"gopkg.in/mgo.v2"
 	"crypto/tls"
-	"time"
-	"net"
 	curdS "github.com/yogprakash/contactbook/contactBookService"
+	"gopkg.in/mgo.v2"
+	"net"
+	"time"
 )
 
 func main() {
@@ -20,19 +20,18 @@ func main() {
 	if port == "" {
 		l.Fatal("$PORT must be set")
 	}
-	
+
 	l.Println("restCURDSearchApis service started on port", port)
-	
+
 	db := curdS.DBSession()
 	defer db.Close() // clean up when we’re done
-	
+
 	// Adapt our handle function using withDB and BasicAuth
 	withDB := curdS.WithDB(db)
 	auth := curdS.BasicAuth()
 	h := curdS.Adapt(curdS.MakeHandler(), withDB, auth)
 	//http.HandleFunc("/test", helloWorldHandler)
 	http.ListenAndServe(":"+port, h)
-
 
 	//h := curdS.Adapt(curdS.MakeHandler(), auth)
 	//fmt.Printf("%+v", h)
@@ -45,21 +44,20 @@ func main() {
 	//}
 }
 
-
 var tlsConfig = &tls.Config{}
 
 func helloWorldHandler(w http.ResponseWriter, r *http.Request) {
 
 	x := mgo.DialInfo{
 		Addrs: []string{"cluster0-shard-00-00-awvwh.mongodb.net",
-		"cluster0-shard-00-01-awvwh.mongodb.net:",
-		"cluster0-shard-00-02-awvwh.mongodb.net"},
-		Database:"admin",
-		ReplicaSetName:"Cluster0-shard-0",
-		Username:"yprakash",
-		Password:"test123",
-		FailFast:true,
-		Timeout:time.Second * 5,
+			"cluster0-shard-00-01-awvwh.mongodb.net:",
+			"cluster0-shard-00-02-awvwh.mongodb.net"},
+		Database:       "admin",
+		ReplicaSetName: "Cluster0-shard-0",
+		Username:       "yprakash",
+		Password:       "test123",
+		FailFast:       true,
+		Timeout:        time.Second * 5,
 	}
 	x.DialServer = func(addr *mgo.ServerAddr) (net.Conn, error) {
 		conn, err := tls.Dial("tcp", addr.String(), tlsConfig)
@@ -76,4 +74,3 @@ func helloWorldHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(names)
 	io.WriteString(w, "Hello world!")
 }
-
