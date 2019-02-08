@@ -3,11 +3,18 @@ package main
 import (
 	l "log"
 	"net/http"
+	"os"
 	curdS "github.com/yogprakash/contactbook/contactBookService"
 )
 
 func main() {
-	l.Println("restCURDSearchApis service started on port :8080")
+	port := os.Getenv("PORT")
+
+	if port == "" {
+		l.Fatal("$PORT must be set")
+	}
+	
+	l.Println("restCURDSearchApis service started on port", port)
 
 	db := curdS.DBSession()
 	defer db.Close() // clean up when we’re done
@@ -21,7 +28,7 @@ func main() {
 	mux.Handle("/restservice/", h)
 
 	// start the server
-	if err := http.ListenAndServe(":8080", mux); err != nil {
+	if err := http.ListenAndServe(":" + port, mux); err != nil {
 		l.Fatal(err)
 	}
 }
