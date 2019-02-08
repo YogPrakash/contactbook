@@ -13,6 +13,10 @@
 			"revisionTime": "2019-01-25T16:05:53Z"
 		},
 		{
+			"path": "github.com/murlokswarm/errors",
+			"revision": ""
+		},
+		{
 			"checksumSHA1": "M6sjjnCO11RLHF7oIFLoxwZEFPM=",
 			"path": "github.com/yogprakash/contactbook",
 			"revision": "8e253a2832f3e6d19cd4b85c0b65565f2eb4f656",
