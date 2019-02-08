@@ -3,7 +3,7 @@ package main
 import (
 	l "log"
 	"net/http"
-	curdS "restCURDSearchApis/curdSearchApisService"
+	curdS "github.com/yogprakash/contactbook/contactBookService"
 )
 
 func main() {

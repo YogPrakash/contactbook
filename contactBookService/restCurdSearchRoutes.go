@@ -1,4 +1,4 @@
-package curdSearchApisService
+package contactBookService
 
 import (
 	"github.com/gorilla/mux"

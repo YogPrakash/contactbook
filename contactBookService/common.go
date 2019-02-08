@@ -1,4 +1,4 @@
-package curdSearchApisService
+package contactBookService
 
 const (
 	dbName           = "RestService"
