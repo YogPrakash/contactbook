@@ -1,7 +1,7 @@
 package contactBookService
 
 import (
-	"context"
+	//"context"
 	"fmt"
 	"github.com/unrolled/render"
 	"gopkg.in/mgo.v2"
@@ -25,12 +25,12 @@ func WithDB(db *mgo.Session) Adapter {
 		// the adapter (when called) should return a new handler
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// copy the database session
-			dbsession := db.Copy()
-			defer dbsession.Close() // clean up
-			// save it in the request context
-			ctx := context.WithValue(r.Context(), "database", dbsession)
-			r = r.WithContext(ctx)
-			// pass execution to the original handler
+			//dbsession := db.Copy()
+			//defer dbsession.Close() // clean up
+			//// save it in the request context
+			//ctx := context.WithValue(r.Context(), "database", dbsession)
+			//r = r.WithContext(ctx)
+			//// pass execution to the original handler
 			next.ServeHTTP(w, r)
 		})
 	}
