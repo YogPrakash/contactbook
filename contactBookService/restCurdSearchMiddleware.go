@@ -1,14 +1,18 @@
 package contactBookService
 
 import (
-	//"context"
+	"context"
 	"fmt"
 	"github.com/unrolled/render"
 	"gopkg.in/mgo.v2"
 	l "log"
 	"net/http"
-	"os"
+	"net"
+	"time"
+	"crypto/tls"
 )
+
+var tlsConfig = &tls.Config{}
 
 type Adapter func(http.Handler) http.Handler
 
@@ -25,11 +29,11 @@ func WithDB(db *mgo.Session) Adapter {
 		// the adapter (when called) should return a new handler
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// copy the database session
-			//dbsession := db.Copy()
-			//defer dbsession.Close() // clean up
-			//// save it in the request context
-			//ctx := context.WithValue(r.Context(), "database", dbsession)
-			//r = r.WithContext(ctx)
+			dbsession := db.Copy()
+			defer dbsession.Close() // clean up
+			// save it in the request context
+			ctx := context.WithValue(r.Context(), "database", dbsession)
+			r = r.WithContext(ctx)
 			//// pass execution to the original handler
 			next.ServeHTTP(w, r)
 		})
@@ -65,11 +69,22 @@ func BasicAuth() Adapter {
 // create a db session
 func DBSession() *mgo.Session {
 	// connect to the database
-	dbURL := os.Getenv("DATABASE_URL")
-	if len(dbURL) == 0 {
-		dbURL = "localhost:27017"
+	x := mgo.DialInfo{
+		Addrs: []string{"cluster0-shard-00-00-awvwh.mongodb.net",
+			"cluster0-shard-00-01-awvwh.mongodb.net:",
+			"cluster0-shard-00-02-awvwh.mongodb.net"},
+		Database:"admin",
+		ReplicaSetName:"Cluster0-shard-0",
+		Username:"yprakash",
+		Password:"test123",
+		FailFast:true,
+		Timeout:time.Second * 5,
 	}
-	db, err := mgo.Dial(dbURL)
+	x.DialServer = func(addr *mgo.ServerAddr) (net.Conn, error) {
+		conn, err := tls.Dial("tcp", addr.String(), tlsConfig)
+		return conn, err
+	}
+	db, err := mgo.DialWithInfo(&x)
 	if err != nil {
 		l.Fatal("unable to connect to mongodb : ", err)
 	}
