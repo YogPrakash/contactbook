@@ -1,6 +1,23 @@
 {
 	"comment": "",
 	"ignore": "test",
-	"package": [],
+	"package": [
+		{
+			"path": "contactBookService",
+			"revision": ""
+		},
+		{
+			"checksumSHA1": "yGnECJsPZBlk5khJmLUP8thNNxM=",
+			"path": "github.com/gorilla/mux",
+			"revision": "a7962380ca08b5a188038c69871b8d3fbdf31e89",
+			"revisionTime": "2019-01-25T16:05:53Z"
+		},
+		{
+			"checksumSHA1": "M6sjjnCO11RLHF7oIFLoxwZEFPM=",
+			"path": "github.com/yogprakash/contactbook",
+			"revision": "8e253a2832f3e6d19cd4b85c0b65565f2eb4f656",
+			"revisionTime": "2019-02-08T15:43:03Z"
+		}
+	],
 	"rootPath": "github.com/yogprakash/contactbook"
 }
