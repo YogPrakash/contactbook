@@ -4,7 +4,8 @@
 	"package": [
 		{
 			"path": "contactBookService",
-			"revision": ""
+			"revision": "",
+			"version": "2"
 		},
 		{
 			"path": "contactbook",
