@@ -1,4 +1,4 @@
-## ************************ For Docker-compose setup / Setting up the environment for project ****************************##
+## ************************ For Setting up the environment for project ****************************##
 1. In machine set the environment variable
 #command : export PORT=8080
 
