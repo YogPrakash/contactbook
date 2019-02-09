@@ -6,4 +6,4 @@ build:
   - go
 
 run:
-  web: restCURDSearchApis
+  web: contactbook

@@ -35,9 +35,11 @@ func insertH(w http.ResponseWriter, r *http.Request) {
 	if !emailExists(*cb.Email, db) {
 		// give the contact info  a unique ID and set the time
 		cb.ID = uuid.NewV1().String()
+		cb.IsActive = &trueVal
 		crtDate := time.Now()
 		cb.CreateDateTime = &crtDate
 		cb.LastUpdatedDateTime = &crtDate
+		cb.DocumentVersion = &docVersion
 		// insert it into the database
 		if err := db.DB(dbName).C(collectionName).Insert(&cb); err != nil {
 			HTTPErrorResponse(w, http.StatusNotFound, err)
@@ -164,6 +166,12 @@ func searchH(w http.ResponseWriter, r *http.Request) {
 	fromPage := r.URL.Query().Get("fromPage")
 	toPage := r.URL.Query().Get("toPage")
 
+	if len(query) == 0 {
+		err := fmt.Errorf("query can not be empty")
+		HTTPErrorResponse(w, http.StatusBadRequest, err)
+		return
+	}
+
 	//variable to store starting and end page for pagination
 	var s, e int
 	var err error
@@ -179,12 +187,6 @@ func searchH(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			HTTPErrorResponse(w, http.StatusBadRequest, errors.New("failed to convert string to int"))
 		}
-	}
-
-	if len(query) == 0 {
-		err := fmt.Errorf("query can not be empty")
-		HTTPErrorResponse(w, http.StatusBadRequest, err)
-		return
 	}
 
 	if s == 0 && e == 0 {

@@ -1,17 +1,13 @@
 ## ************************ For Docker-compose setup / Setting up the environment for project ****************************##
-1. In root directory of this project in terminal run following commands 
-#- docker-compose build
-#- docker-compose up -d
-###if build fails there might be the old image of your app is still there when you try to build the project again and again 
-## in that case do following in terminal 
-#-> docker-compose ps
-#-> docker-compose rm 
-#and then again build the project in docker
+1. In machine set the environment variable
+#command : export PORT=8080
+
 
 ##***************************************** For testing ***************************************************##
 1. install the coverage package  run following commands in terminal
  2.1 - go get golang.org/x/tools/cmd/cover
- # for this go to the file/directory where your _test.go files are available and run the command given below
+
+ #go to the file/directory where your _test.go files are available and run the command given below
  2.2 - go test -v 
  #for seeing the test coverage run this command 
  2.3 go test -coverprofile  coverage

@@ -16,3 +16,9 @@ const (
 	Home
 	Work
 )
+
+var (
+	docVersion = float32(1.0)
+	falseVal   = false
+	trueVal    = true
+)

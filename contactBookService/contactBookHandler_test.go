@@ -1,9 +1,7 @@
 package contactBookService
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/mgo.v2"
@@ -17,46 +15,62 @@ import (
 )
 
 var (
-	recipeID          = "1234u51234567"
-	incorrectRecipeID = "@&ASDFGE@3244"
+	contactBookID          = "1234u51234567"
+	incorrectContactBookID = "@&ASDFGE@3244"
 )
 
 func SetupData(session *mgo.Session) {
-	var rec recipe
-	rec.ID = recipeID
-	rec.Name = "chicken"
-	diff := 2
-	rec.Difficulty = &diff
-	prepTime := time.Now()
-	rec.PrepTime = &prepTime
-	veg := false
-	rec.Vegetarian = &veg
+	var cb contactBook
+	cb.ID = contactBookID
+	cb.FirstName = "Yog"
+	cb.LastName = "Prakash"
+	cb.UserID = "U111"
+	cb.GroupID = "G11"
+	email := "testing@gmail.com"
+	cb.Email = &email
+	createTime := time.Now()
+	cb.CreateDateTime = &createTime
+	cb.LastUpdatedDateTime = &createTime
+	cb.DocumentVersion = &docVersion
+	cb.IsActive = &trueVal
 	// insert it into the database
-	if err := session.DB(dbName).C(collectionName).Insert(&rec); err != nil {
+	if err := session.DB(dbName).C(collectionName).Insert(&cb); err != nil {
 		l.Printf("error inserting in db error:%v", err)
 	}
 
 }
 func ClearData(session *mgo.Session) {
-	findQ := bson.M{"_id": recipeID}
+	findQ := bson.M{"_id": contactBookID}
 	if err := session.DB(dbName).C(collectionName).Remove(findQ); err != nil {
 		l.Printf("error inserting in db error:%v", err)
 	}
 }
 
 //************************** insertH starts *************************************
-func TestInserRecipeCorrectPayload(t *testing.T) {
+func TestInserContactCorrectPayload(t *testing.T) {
 	db := DBSession()
 	defer db.Close() // clean up when we’re done
 
 	res := httptest.NewRecorder()
 	correctPayload := `{
-    		"name":"dal makhani",
-			"difficulty":1,
-			"vegetarian":true
+	"userID": "U2",
+  	"groupID": "G2",
+  	"firstName": "Yog1",
+  	"lastName": "Prakash1",
+  	"email": "test1@gmail.com",
+  	"contact": [
+    	{
+     	 "type": 0,
+	     "number": "2234567890",
+         "countryCode": "91",
+         "isPrimary": true
+    	}
+  	],
+  	"notes": "prime user 1",
+  	"lastUpdatedByUser": "Yog"
 	}`
 	a := assert.New(t)
-	req, err := http.NewRequest(http.MethodPost, "/restservice/recipe", strings.NewReader(correctPayload))
+	req, err := http.NewRequest(http.MethodPost, "/cb_service/contact_book", strings.NewReader(correctPayload))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", encodedAuthToken)
 	if err != nil {
@@ -70,18 +84,30 @@ func TestInserRecipeCorrectPayload(t *testing.T) {
 	a.Equal(res.Code, http.StatusOK)
 }
 
-func TestInserRecipeIncorrectPayload(t *testing.T) {
+func TestInserContactIncorrectPayload(t *testing.T) {
 	db := DBSession()
 	defer db.Close() // clean up when we’re done
 
 	res := httptest.NewRecorder()
 	incorrectPayload := `{
-    		"name":"dal makhani",
-			"difficulty":"1",
-			"vegetarian":true
+    			"userID": "U2",
+  	"groupID": 1,
+  	"firstName": "Yog1",
+  	"lastName": "Prakash1",
+  	"email": "test1@gmail.com",
+  	"contact": [
+    	{
+     	 "type": 0,
+	     "number": "2234567890",
+         "countryCode": "91",
+         "isPrimary": true
+    	}
+  	],
+  	"notes": "prime user 1",
+  	"lastUpdatedByUser": "Yog"
 	}`
 	a := assert.New(t)
-	req, err := http.NewRequest(http.MethodPost, "/restservice/recipe", strings.NewReader(incorrectPayload))
+	req, err := http.NewRequest(http.MethodPost, "/cb_service/contact_book", strings.NewReader(incorrectPayload))
 	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("Authorization", encodedAuthToken)
 	if err != nil {
@@ -105,17 +131,18 @@ func TestReadOnecorrectID(t *testing.T) {
 
 	a := assert.New(t)
 	router := mux.NewRouter()
-	router.HandleFunc("/restservice/recipe/{id}", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+	router.HandleFunc("/cb_service/contact_book/{id}", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		// save it in the request context
 		ctx := context.WithValue(req.Context(), "database", db)
 		req.Header.Set("Content-Type", contentType)
+		req.Header.Set("Authorization", encodedAuthToken)
 		req = req.WithContext(ctx)
 		readOneH(res, req)
 	}))
 
 	server := httptest.NewServer(router)
 	defer server.Close()
-	reqURL := server.URL + "/restservice/recipe/" + recipeID
+	reqURL := server.URL + "/cb_service/contact_book/" + contactBookID
 	res, err := http.Get(reqURL)
 	if err != nil {
 		l.Printf("Cannot Make Request :%v ", err)
@@ -133,17 +160,18 @@ func TestReadOneIncorrectID(t *testing.T) {
 
 	a := assert.New(t)
 	router := mux.NewRouter()
-	router.HandleFunc("/restservice/recipe/{id}", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+	router.HandleFunc("/cb_service/contact_book/{id}", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		// save it in the request context
 		ctx := context.WithValue(req.Context(), dbSessionKey, db)
 		req.Header.Set("Content-Type", contentType)
+		req.Header.Set("Authorization", encodedAuthToken)
 		req = req.WithContext(ctx)
 		readOneH(res, req)
 	}))
 
 	server := httptest.NewServer(router)
 	defer server.Close()
-	reqURL := server.URL + "/restservice/recipe/" + incorrectRecipeID
+	reqURL := server.URL + "/cb_service/contact_book/" + incorrectContactBookID
 	res, err := http.Get(reqURL)
 	if err != nil {
 		l.Printf("Cannot Make Request :%v ", err)
@@ -164,7 +192,7 @@ func TestReadAllCorrectPayload(t *testing.T) {
 	SetupData(db)
 	res := httptest.NewRecorder()
 	a := assert.New(t)
-	req, err := http.NewRequest(http.MethodGet, "/restservice/recipe", nil)
+	req, err := http.NewRequest(http.MethodGet, "/cb_service/contact_book", nil)
 	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("Authorization", encodedAuthToken)
 	if err != nil {
@@ -186,7 +214,7 @@ func TestReadAllIncorrectPayload(t *testing.T) {
 	SetupData(db)
 	res := httptest.NewRecorder()
 	a := assert.New(t)
-	req, err := http.NewRequest(http.MethodGet, "/restservice/recipe?fromPage='!@#$'", nil)
+	req, err := http.NewRequest(http.MethodGet, "/cb_service/contact_book?fromPage='!@#$'", nil)
 	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("Authorization", encodedAuthToken)
 	if err != nil {
@@ -208,20 +236,27 @@ func TestSearchCorrectPayload(t *testing.T) {
 	defer db.Close() // clean up when we’re done
 
 	SetupData(db)
-	res := httptest.NewRecorder()
 	a := assert.New(t)
-	req, err := http.NewRequest(http.MethodGet, "/restservice/search/?query=ch", nil)
-	req.Header.Set("Content-Type", contentType)
-	req.Header.Set("Authorization", encodedAuthToken)
+	router := mux.NewRouter()
+	router.HandleFunc("/cb_service/contact_book/search/{query}", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		// save it in the request context
+		ctx := context.WithValue(req.Context(), dbSessionKey, db)
+		req.Header.Set("Content-Type", contentType)
+		req.Header.Set("Authorization", encodedAuthToken)
+		req = req.WithContext(ctx)
+		searchH(res, req)
+	}))
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+	reqURL := server.URL + "/cb_service/contact_book/search/Yog"
+	res, err := http.Get(reqURL)
 	if err != nil {
 		l.Printf("Cannot Make Request :%v ", err)
 		a.Error(err)
 	}
-	// save it in the request context
-	ctx1 := context.WithValue(req.Context(), dbSessionKey, db)
-	req = req.WithContext(ctx1)
-	searchH(res, req)
-	a.Equal(res.Code, http.StatusOK)
+
+	a.Equal(res.StatusCode, http.StatusOK)
 	ClearData(db)
 }
 
@@ -230,85 +265,31 @@ func TestSearchIncorrectPayload(t *testing.T) {
 	defer db.Close() // clean up when we’re done
 
 	SetupData(db)
-	res := httptest.NewRecorder()
+
 	a := assert.New(t)
-	req, err := http.NewRequest(http.MethodGet, "/restservice/search/?fromPage='!@#$'", nil)
-	req.Header.Set("Content-Type", contentType)
-	req.Header.Set("Authorization", encodedAuthToken)
+	router := mux.NewRouter()
+	router.HandleFunc("/cb_service/contact_book/search/{query}?fromPage='!@#$'", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		// save it in the request context
+		ctx := context.WithValue(req.Context(), dbSessionKey, db)
+		req.Header.Set("Content-Type", contentType)
+		req.Header.Set("Authorization", encodedAuthToken)
+		req = req.WithContext(ctx)
+		searchH(res, req)
+	}))
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+	reqURL := server.URL + "/cb_service/contact_book/search/ggghhg?fromPage='!@#$'"
+	res, err := http.Get(reqURL)
 	if err != nil {
 		l.Printf("Cannot Make Request :%v ", err)
 		a.Error(err)
 	}
-	// save it in the request context
-	ctx1 := context.WithValue(req.Context(), dbSessionKey, db)
-	req = req.WithContext(ctx1)
-	searchH(res, req)
-	a.Equal(res.Code, http.StatusBadRequest)
+	a.Equal(res.StatusCode, http.StatusNotFound)
 	ClearData(db)
 }
 
 //************************** Search ends *************************************
-
-//************************** rating starts *************************************
-func TestRatingCorrectPayload(t *testing.T) {
-	db := DBSession()
-	defer db.Close() // clean up when we’re done
-
-	SetupData(db)
-	ratingReq := recipeRatingReq{}
-	rate := 5
-	ratingReq.Rating = &rate
-	payload, err := json.Marshal(ratingReq)
-	if err != nil {
-		l.Printf("failed to marshal the payload :%v ", err)
-	}
-	res := httptest.NewRecorder()
-	a := assert.New(t)
-	req, err := http.NewRequest(http.MethodPost, "/restservice/recipe/"+recipeID+"/rating", bytes.NewBuffer(payload))
-	req.Header.Set("Content-Type", contentType)
-	req.Header.Set("Authorization", encodedAuthToken)
-	if err != nil {
-		l.Printf("Cannot Make Request :%v ", err)
-		a.Error(err)
-	}
-	// save it in the request context
-	ctx1 := context.WithValue(req.Context(), dbSessionKey, db)
-	req = req.WithContext(ctx1)
-	ratingH(res, req)
-	a.Equal(res.Code, http.StatusNotFound)
-	ClearData(db)
-}
-
-func TestRatingIncorrectPayload(t *testing.T) {
-	db := DBSession()
-	defer db.Close() // clean up when we’re done
-
-	SetupData(db)
-	ratingReq := recipeRatingReq{}
-	rate := 5
-	ratingReq.Rating = &rate
-	payload, err := json.Marshal(ratingReq)
-	if err != nil {
-		l.Printf("failed to marshal the payload :%v ", err)
-	}
-	res := httptest.NewRecorder()
-	a := assert.New(t)
-	req, err := http.NewRequest(http.MethodPost, "/restservice/recipe/"+incorrectRecipeID+"/rating", bytes.NewBuffer(payload))
-	req.Header.Set("Content-Type", contentType)
-	req.Header.Set("Authorization", encodedAuthToken)
-	if err != nil {
-		l.Printf("Cannot Make Request :%v ", err)
-		a.Error(err)
-	}
-	// save it in the request context
-	ctx1 := context.WithValue(req.Context(), dbSessionKey, db)
-	req = req.WithContext(ctx1)
-	ratingH(res, req)
-	a.Equal(res.Code, http.StatusNotFound)
-	ClearData(db)
-}
-
-//************************** rating ends *************************************
 
 //************************** readOneH starts *************************************
 func TestDeleteHCorrectID(t *testing.T) {
@@ -318,17 +299,18 @@ func TestDeleteHCorrectID(t *testing.T) {
 
 	a := assert.New(t)
 	router := mux.NewRouter()
-	router.HandleFunc("/restservice/recipe/{id}", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+	router.HandleFunc("/cb_service/contact_book/{id}", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		// save it in the request context
 		ctx := context.WithValue(req.Context(), dbSessionKey, db)
 		req.Header.Set("Content-Type", contentType)
+		req.Header.Set("Authorization", encodedAuthToken)
 		req = req.WithContext(ctx)
 		deleteH(res, req)
 	}))
 
 	server := httptest.NewServer(router)
 	defer server.Close()
-	reqURL := server.URL + "/restservice/recipe/" + recipeID
+	reqURL := server.URL + "/cb_service/contact_book/" + contactBookID
 	res, err := http.Get(reqURL)
 	if err != nil {
 		l.Printf("Cannot Make Request :%v ", err)
@@ -346,17 +328,18 @@ func TestDeleteHIncorrectID(t *testing.T) {
 
 	a := assert.New(t)
 	router := mux.NewRouter()
-	router.HandleFunc("/restservice/recipe/{id}", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+	router.HandleFunc("/cb_service/contact_book/{id}", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		// save it in the request context
 		ctx := context.WithValue(req.Context(), dbSessionKey, db)
 		req.Header.Set("Content-Type", contentType)
+		req.Header.Set("Authorization", encodedAuthToken)
 		req = req.WithContext(ctx)
 		deleteH(res, req)
 	}))
 
 	server := httptest.NewServer(router)
 	defer server.Close()
-	reqURL := server.URL + "/restservice/recipe/" + incorrectRecipeID
+	reqURL := server.URL + "/cb_service/contact_book/" + incorrectContactBookID
 	res, err := http.Get(reqURL)
 	if err != nil {
 		l.Printf("Cannot Make Request :%v ", err)
