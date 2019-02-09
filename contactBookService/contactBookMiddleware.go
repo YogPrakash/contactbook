@@ -9,6 +9,7 @@ import (
 	l "log"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -42,11 +43,10 @@ func WithDB(db *mgo.Session) Adapter {
 func BasicAuth() Adapter {
 	// return the Adapter
 	return func(next http.Handler) http.Handler {
-		// the adapter (when called) should return a new handler
+		//the adapter (when called) should return a new handler
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			//compare the request url and method type
-			if (r.URL.Path == "/restservice/recipe" && r.Method == http.MethodPost) ||
-				(r.URL.Path == "/restservice/recipe/" && r.Method == http.MethodPatch) || (r.URL.Path == "/restservice/recipe/" && r.Method == http.MethodDelete) {
+			if strings.Contains(strings.TrimSpace(r.URL.Path), "/cb_service/") {
 				//generic error message for invalid autherization
 				err := fmt.Errorf("User Not Authorized")
 				username, password, authOK := r.BasicAuth()

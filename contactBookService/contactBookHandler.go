@@ -10,44 +10,65 @@ import (
 	"gopkg.in/mgo.v2/bson"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
-func handleInsert(w http.ResponseWriter, r *http.Request) {
+func insertH(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	db := ctx.Value(dbSessionKey).(*mgo.Session)
 	// decode the request body
-	var recipe recipe
-	if err := json.NewDecoder(r.Body).Decode(&recipe); err != nil {
+	var cb contactBook
+	if err := json.NewDecoder(r.Body).Decode(&cb); err != nil {
 		HTTPErrorResponse(w, http.StatusBadRequest, err)
 		return
 	}
-	// give the recipe a unique ID and set the time
-	recipe.ID = uuid.NewV1().String()
-	prepTime := time.Now()
-	recipe.PrepTime = &prepTime
-	// insert it into the database
-	if err := db.DB(dbName).C(collectionName).Insert(&recipe); err != nil {
+	//normalize email to be saved only in lowercase
+	if cb.Email != nil {
+		*cb.Email = strings.ToLower(*cb.Email)
+	} else {
+		HTTPErrorResponse(w, http.StatusBadRequest, errors.New("email can not be empty"))
+		return
+	}
+
+	// check if email exists to maintain the unique email
+	if !emailExists(*cb.Email, db) {
+		// give the contact info  a unique ID and set the time
+		cb.ID = uuid.NewV1().String()
+		crtDate := time.Now()
+		cb.CreateDateTime = &crtDate
+		cb.LastUpdatedDateTime = &crtDate
+		// insert it into the database
+		if err := db.DB(dbName).C(collectionName).Insert(&cb); err != nil {
+			HTTPErrorResponse(w, http.StatusNotFound, err)
+			return
+		}
+	} else {
+		HTTPErrorResponse(w, http.StatusNotFound, errors.New("duplicate email, email already exists"))
+		return
+	}
+
+	if err := db.DB(dbName).C(collectionName).Find(bson.M{"_id": cb.ID}).One(&cb); err != nil {
 		HTTPErrorResponse(w, http.StatusNotFound, err)
 		return
 	}
-	HTTPResponse(w, http.StatusOK, "inserted recipe successfully", recipe)
+	HTTPResponse(w, http.StatusOK, "inserted contact book  successfully", cb)
 }
 
 func readOneH(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	db := ctx.Value("database").(*mgo.Session)
-	var recipe *recipe
+	var cb *contactBook
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if err := db.DB(dbName).C(collectionName).
-		Find(bson.M{"_id": id}).One(&recipe); err != nil {
+		Find(bson.M{"_id": id}).One(&cb); err != nil {
 		HTTPErrorResponse(w, http.StatusNotFound, err)
 		return
 	}
 
-	HTTPResponse(w, http.StatusOK, "recipe by id response", recipe)
+	HTTPResponse(w, http.StatusOK, "contact book by id response", cb)
 }
 
 func readAllH(w http.ResponseWriter, r *http.Request) {
@@ -73,22 +94,26 @@ func readAllH(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var recipe []*recipe
+	var cbs []contactBook
+
+	if s == 0 && e == 0 {
+		e = 20
+	}
 
 	if err := db.DB(dbName).C(collectionName).
-		Find(nil).Sort("-prepTime").Skip(s).Limit(e).All(&recipe); err != nil {
+		Find(nil).Sort("-lastUpdatedDateTime").Skip(s).Limit(e).All(&cbs); err != nil {
 		HTTPErrorResponse(w, http.StatusNotFound, err)
 		return
 	}
 
-	HTTPResponse(w, http.StatusOK, "recipe list response", recipe)
+	HTTPResponse(w, http.StatusOK, "contact book list response", cbs)
 }
 
 func patchH(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	db := ctx.Value("database").(*mgo.Session)
-	var recipe *recipe
-	if err := json.NewDecoder(r.Body).Decode(&recipe); err != nil {
+	var cb *contactBook
+	if err := json.NewDecoder(r.Body).Decode(&cb); err != nil {
 		HTTPErrorResponse(w, http.StatusBadRequest, err)
 		return
 	}
@@ -96,9 +121,9 @@ func patchH(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 	findQ := bson.M{"_id": id}
-	updateQ := recipe.updateQ()
+	updateQ := cb.updateQ()
 
-	// update database for given recipe id
+	// update database for given contact book id
 	if err := db.DB(dbName).C(collectionName).Update(findQ, updateQ); err != nil {
 		HTTPErrorResponse(w, http.StatusNotFound, err)
 		return
@@ -106,12 +131,12 @@ func patchH(w http.ResponseWriter, r *http.Request) {
 
 	//fetch the updated doc from db to return as response
 	if err := db.DB(dbName).C(collectionName).
-		Find(findQ).One(&recipe); err != nil {
+		Find(findQ).One(&cb); err != nil {
 		HTTPErrorResponse(w, http.StatusNotFound, err)
 		return
 	}
 
-	HTTPResponse(w, http.StatusOK, "updated recipe", recipe)
+	HTTPResponse(w, http.StatusOK, "updated contact book", cb)
 }
 
 func deleteH(w http.ResponseWriter, r *http.Request) {
@@ -121,62 +146,21 @@ func deleteH(w http.ResponseWriter, r *http.Request) {
 	id := vars["id"]
 	findQ := bson.M{"_id": id}
 
-	//remove the doc from db for given recipe id
+	//remove the doc from db for given contact book id
 	if err := db.DB(dbName).C(collectionName).Remove(findQ); err != nil {
 		HTTPErrorResponse(w, http.StatusNotFound, err)
 		return
 	}
-	msg := fmt.Sprintf("deleted the  recipe document with ID: %v", id)
+	msg := fmt.Sprintf("deleted the  contact book document with ID: %v", id)
 	HTTPResponse(w, http.StatusOK, msg, nil)
-}
-
-func ratingH(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	db := ctx.Value("database").(*mgo.Session)
-	vars := mux.Vars(r)
-	id := vars["id"]
-
-	var payload *recipeRatingReq
-	var recipe *recipe
-
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		HTTPErrorResponse(w, http.StatusBadRequest, err)
-		return
-	}
-
-	if payload.Rating == nil {
-		err := fmt.Errorf("invalid request rating can't be nil")
-		HTTPErrorResponse(w, http.StatusBadRequest, err)
-		return
-	}
-
-	findQ := bson.M{"_id": id}
-	if err := db.DB(dbName).C(collectionName).
-		Find(findQ).One(&recipe); err != nil {
-		HTTPErrorResponse(w, http.StatusNotFound, err)
-		return
-	}
-
-	if recipe.Rating != nil {
-		errMsg := fmt.Errorf("rating for recipe with id : %v is already done", id)
-		HTTPErrorResponse(w, http.StatusBadRequest, errMsg)
-		return
-	}
-
-	recipe.Rating = payload.Rating
-	updateQ := recipe.updateQ()
-	if err := db.DB(dbName).C(collectionName).Update(findQ, updateQ); err != nil {
-		HTTPErrorResponse(w, http.StatusNotFound, err)
-		return
-	}
-	HTTPResponse(w, http.StatusOK, "rated  recipe successfully", recipe)
 }
 
 func searchH(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	db := ctx.Value("database").(*mgo.Session)
 
-	query := r.URL.Query().Get("query")
+	vars := mux.Vars(r)
+	query := vars["query"]
 	fromPage := r.URL.Query().Get("fromPage")
 	toPage := r.URL.Query().Get("toPage")
 
@@ -198,23 +182,28 @@ func searchH(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(query) == 0 {
-		err := fmt.Errorf("failed to convert string to int")
+		err := fmt.Errorf("query can not be empty")
 		HTTPErrorResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
-	var recipe []*recipe
+	if s == 0 && e == 0 {
+		e = 10
+	}
+
+	var cbs []contactBook
 	findQ := bson.M{}
-	findQ["name"] = bson.M{"$regex": query + ".*", "$options": "i"}
+	orQ := []bson.M{}
+	orQ = append(orQ, bson.M{"lastName": bson.M{"$regex": query + ".*", "$options": "i"}},
+		bson.M{"email": bson.M{"$regex": query + ".*.", "$options": "i"}},
+		bson.M{"firstName": bson.M{"$regex": query + ".*", "$options": "i"}})
+
+	findQ["$or"] = orQ
 	if err := db.DB(dbName).C(collectionName).
-		Find(findQ).Sort("-prepTime").Skip(s).Limit(e).All(&recipe); err != nil {
+		Find(findQ).Sort("-lastUpdatedDateTime").Skip(s).Limit(e).All(&cbs); err != nil {
 		HTTPErrorResponse(w, http.StatusNotFound, err)
 		return
 	}
 
-	HTTPResponse(w, http.StatusOK, "recipe search list response", recipe)
-}
-
-func ffff(w http.ResponseWriter, r *http.Request) {
-	HTTPResponse(w, http.StatusOK, "recipe search list response", "hello")
+	HTTPResponse(w, http.StatusOK, "contact book search list response", cbs)
 }

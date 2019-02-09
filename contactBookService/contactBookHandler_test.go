@@ -44,7 +44,7 @@ func ClearData(session *mgo.Session) {
 	}
 }
 
-//************************** handleInsert starts *************************************
+//************************** insertH starts *************************************
 func TestInserRecipeCorrectPayload(t *testing.T) {
 	db := DBSession()
 	defer db.Close() // clean up when we’re done
@@ -66,7 +66,7 @@ func TestInserRecipeCorrectPayload(t *testing.T) {
 	// save it in the request context
 	ctx := context.WithValue(req.Context(), "database", db)
 	req = req.WithContext(ctx)
-	handleInsert(res, req)
+	insertH(res, req)
 	a.Equal(res.Code, http.StatusOK)
 }
 
@@ -91,11 +91,11 @@ func TestInserRecipeIncorrectPayload(t *testing.T) {
 	// save it in the request context
 	ctx1 := context.WithValue(req.Context(), dbSessionKey, db)
 	req = req.WithContext(ctx1)
-	handleInsert(res, req)
+	insertH(res, req)
 	a.Equal(res.Code, http.StatusBadRequest)
 }
 
-//************************** handleInsert ends *************************************
+//************************** insertH ends *************************************
 
 //************************** readOneH starts *************************************
 func TestReadOnecorrectID(t *testing.T) {
